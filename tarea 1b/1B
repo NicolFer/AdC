@@ -1,0 +1,118 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+// Función para convertir un número decimal a binario
+vector<int> deciabi(int num, int n) {
+    vector<int> bin(n, 0);
+    bool negative = (num < 0);
+    for (int i = n - 1; i >= 0; i--) {
+        bin[i] = num & 1;
+        num >>= 1;
+    }
+    if (negative) {
+        bin = complemento2(bin); //obtener su complemento a 2
+    }
+    return bin;
+}
+
+// Función para obtener el complementoo a 2
+vector<int> complemento2(const vector<int>& bin) {
+    vector<int> complemento = bin;
+    bool carry = true;  // Para sumar +1
+    for (int i = bin.size() - 1; i >= 0; i--) {
+        complemento[i] = complemento[i] == 1 ? 0 : 1;
+        if (carry) {
+            complemento[i] = complemento[i] + 1;
+            carry = complemento[i] == 2;
+            complemento[i] %= 2;
+        }
+    }
+    return complemento;
+}
+
+// sumar dos números binarios
+vector<int> adiciónbi(const vector<int>& A, const vector<int>& B) {
+    vector<int> resultado(A.size(), 0);
+    int carry = 0;
+    for (int i = A.size() - 1; i >= 0; i--) {
+        int sum = A[i] + B[i] + carry;
+        resultado[i] = sum % 2;
+        carry = sum / 2;
+    }
+    return resultado;
+}
+
+void aritmetico(vector<int>& A, vector<int>& Q, int& qminus1) {
+    int msb_A = A[0]; 
+    qminus1 = Q.back();
+    
+    // Desplazar A
+    for (int i = A.size() - 1; i > 0; i--) {
+        A[i] = A[i - 1];
+    }
+    A[0] = msb_A; 
+
+    // Desplazar Q
+    for (int i = Q.size() - 1; i > 0; i--) {
+        Q[i] = Q[i - 1];
+    }
+    Q[0] = A.back(); // MSB
+}
+
+// Función principal del algoritmo de Booth
+int ambasmultiplica(int M, int Q, int n) {
+    vector<int> A(n, 0);  // Inicializar A en 0
+    vector<int> M_bin = deciabi(M, n);  // Convertir M a bin
+    vector<int> Q_bin = deciabi(Q, n);  // Convertir Q a bin
+    vector<int> minusM = complemento2(M_bin);    // Obtener -M en bin
+    int qminus1 = 0;  // Bit auxiliar
+
+    cout << "Estado inicial: A = 0, Q = " << Q << ", Q-1 = 0\n";
+    
+    // Repetir
+    for (int i = 0; i < n; i++) {
+        //A = A + M
+        if (Q_bin.back() == 1 && qminus1 == 0) {
+            A = adiciónbi(A, M_bin);
+        }
+        //caso2
+        else if (Q_bin.back() == 0 && qminus1 == 1) {
+            A = adiciónbi(A, minusM);
+        }
+
+        aritmetico(A, Q_bin, qminus1);
+
+        cout << "Step " << i + 1 << ": A = ";
+        for (int bit : A) cout << bit;
+        cout << ", Q = ";
+        for (int bit : Q_bin) cout << bit;
+        cout << ", Q-1 = " << qminus1 << "\n";
+    }
+
+    int resultado = 0;
+    for (int i = 0; i < n; i++) {
+        resultado += Q_bin[i] * pow(2, i);  
+        resultado += A[i] * pow(2, i + n);  
+    }
+    return resultado;
+}
+
+int main() {
+    int M, Q, n;
+
+    cout << "Ingrese el multiplicando (M): ";
+    cin >> M;
+    cout << "Ingrese el multiplicador (Q): ";
+    cin >> Q;
+    cout << "Ingrese la cantidad de bits (n): ";
+    cin >> n;
+
+
+    int resultado = ambasmultiplica(M, Q, n);
+
+
+    cout << "resultado de la multiplicación: " << resultado << "\n";
+
+    return 0;
+}
