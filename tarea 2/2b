@@ -1,0 +1,55 @@
+#include <iostream>
+#include <cmath>
+using namespace std; 
+
+//extraer signo, exponente, significando
+void descomp(float valor, unsigned int &sig, unsigned int &expo, unsigned int &signi) {
+    unsigned int bits = *(reinterpret_cast<unsigned int*>(&valor));
+    sig = (bits >> 31) & 1;
+    expo = (bits >> 23) & 0xFF; 
+    signi = bits & 0x7FFFFF;
+    if (expo != 0) {
+        signi |= (1 << 23);
+    }
+}
+
+// multi
+float multiplicarfloat(float x, float y) {
+    unsigned int sigX, expoX, signiX;
+    unsigned int sigY, expoY, signiY;
+    descomp(x, sigX, expoX, signiX);
+    descomp(y, sigY, expoY, signiY);
+    if (x == 0.0f || y == 0.0f) return 0.0f;
+    int resultexpo = (expoX - 127) + (expoY - 127) + 127;
+    if (resultexpo >= 255) return INFINITY;
+    if (resultexpo <= 0) return 0.0f;
+
+    unsigned long long signiResul = (unsigned long long) signiX * signiY;
+    if (signiResul & (1ULL << 47)) {
+        signiResul >>= 24;
+        resultexpo++;
+    } else {
+        signiResul >>= 23;
+    }
+
+    unsigned int sigResultado = sigX ^ sigY; 
+    unsigned int resultado = (sigResultado << 31) | (resultexpo << 23) | (signiResul & 0x7FFFFF);
+
+    return *(reinterpret_cast<float*>(&resultado));
+}
+
+int main() {
+    float x, y;
+    
+    cout << "Ingrese el primer valor (float): ";
+    cin >> x;
+    
+    cout << "Ingrese el segundo valor (float): ";
+    cin >> y;
+
+    float resultado = multiplicarfloat(x, y);
+    cout << "Resultado de la multiplicación: " << resultado << endl;
+    
+    return 0;
+}
+
